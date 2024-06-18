@@ -15,7 +15,10 @@ import java.time.Instant;
 public class QueueService {
 
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
-    private final String USER_QUEUE_WAIT_KEY = "users:queue";
+    private final String USER_QUEUE_WAIT_KEY = "users:queue:waiting";
+    private final String USER_QUEUE_PROCEED_KEY = "users:queue:processing";
+    private final Long USER_QUEUE_PROCEED_SIZE = 10L; // TODO : 임의로 세팅
+
 
     public Mono<AddToQueueInfo> addToQueue(Long userId) {
         log.info("ADDING TO QUEUE... user id : {}", userId);
@@ -24,5 +27,24 @@ public class QueueService {
                 .filter(user -> user)
                 .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, userId.toString()))
                 .map(rank -> new AddToQueueInfo(rank + 1, unixTimestamp));
+    }
+
+    public Mono<Void> deleteFromQueue() {
+        log.info("DELETING FROM QUEUE...");
+        return reactiveRedisTemplate.opsForSet()
+                .size(USER_QUEUE_PROCEED_KEY)
+                .doOnNext(size -> log.info("USER QUEUE IN PROGRESS SIZE : {}", size))
+                .flatMap(size -> {
+                    long diff = USER_QUEUE_PROCEED_SIZE - size;
+                    if (diff > 0) {
+                        return reactiveRedisTemplate.opsForZSet().popMin(USER_QUEUE_WAIT_KEY, diff)
+                                .flatMap(user -> reactiveRedisTemplate.opsForSet()
+                                        .add(USER_QUEUE_PROCEED_KEY, user.getValue()))
+                                .then();
+                    } else {
+                        return Mono.empty();
+                    }
+                })
+                .then();
     }
 }
