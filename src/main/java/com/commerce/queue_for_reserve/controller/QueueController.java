@@ -3,10 +3,8 @@ package com.commerce.queue_for_reserve.controller;
 import com.commerce.queue_for_reserve.model.dto.AddToQueueResponse;
 import com.commerce.queue_for_reserve.service.QueueService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -23,5 +21,12 @@ public class QueueController {
                         .rank(addToQueueInfo.rank())
                         .timestamp(addToQueueInfo.timestamp())
                         .build());
+    }
+
+    @DeleteMapping
+    public Mono<ResponseEntity<Object>> deleteFromQueue() {
+        return queueService.deleteFromQueue()
+                .then(Mono.just(ResponseEntity.ok().build()))
+                .onErrorResume(e -> Mono.just(ResponseEntity.status(500).build()));
     }
 }
