@@ -12,8 +12,8 @@ public class AddToQueueResponse extends QueueCommonResponse {
     private long rank;
 
     @Builder
-    public AddToQueueResponse(long timestamp, long rank) {
-        super(timestamp);
+    public AddToQueueResponse(String uuid, long rank) {
+        super(uuid);
         this.rank = rank;
     }
 }

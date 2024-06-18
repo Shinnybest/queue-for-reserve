@@ -1,6 +1,7 @@
 package com.commerce.queue_for_reserve.service;
 
 import com.commerce.queue_for_reserve.model.vo.AddToQueueInfo;
+import com.commerce.queue_for_reserve.model.vo.GetWaitingRankInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -20,13 +22,14 @@ public class QueueService {
     private final Long USER_QUEUE_PROCEED_SIZE = 10L; // TODO : 임의로 세팅
 
 
-    public Mono<AddToQueueInfo> addToQueue(Long userId) {
-        log.info("ADDING TO QUEUE... user id : {}", userId);
+    public Mono<AddToQueueInfo> addToQueue() {
         var unixTimestamp = Instant.now().getEpochSecond();
-        return reactiveRedisTemplate.opsForZSet().add(USER_QUEUE_WAIT_KEY, String.valueOf(userId), unixTimestamp)
+        var uuid = UUID.randomUUID();
+        log.info("ADDING TO QUEUE... timestamp = {}, uuid = {}", unixTimestamp, uuid);
+        return reactiveRedisTemplate.opsForZSet().add(USER_QUEUE_WAIT_KEY, String.valueOf(uuid), unixTimestamp)
                 .filter(user -> user)
-                .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, userId.toString()))
-                .map(rank -> new AddToQueueInfo(rank + 1, unixTimestamp));
+                .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, uuid.toString()))
+                .map(rank -> new AddToQueueInfo(rank + 1, uuid.toString()));
     }
 
     public Mono<Void> deleteFromQueue() {
@@ -46,5 +49,13 @@ public class QueueService {
                     }
                 })
                 .then();
+    }
+
+    public Mono<GetWaitingRankInfo> getWaitingRank(String uuid) {
+        log.info("GETTING RANK IN THE WAITING QUEUE ... uuid : {}", uuid);
+        return reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, uuid)
+                .defaultIfEmpty(-1L)
+                .map(rank -> rank >= 0 ? rank + 1 : rank)
+                .map(rank -> new GetWaitingRankInfo(rank));
     }
 }
