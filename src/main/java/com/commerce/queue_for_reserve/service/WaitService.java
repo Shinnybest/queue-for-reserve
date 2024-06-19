@@ -4,8 +4,10 @@ import com.commerce.queue_for_reserve.model.vo.AddToQueueInfo;
 import com.commerce.queue_for_reserve.model.vo.GetWaitingRankInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -20,8 +22,12 @@ public class WaitService {
 
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
     private final String USER_QUEUE_WAIT_KEY = "users:queue:waiting";
+    private final String USER_QUEUE_PROCEED_KEY_FOR_SCAN = "users:queue:processing:*";
     private final String USER_QUEUE_PROCEED_KEY = "users:queue:processing:%s";
     private final Long USER_QUEUE_PROCEED_SIZE = 10L; // TODO : 임의로 세팅
+
+    @Value("${scheduler.enabled}")
+    private Boolean scheduling;
 
 
     public Mono<AddToQueueInfo> addToQueue() {
@@ -34,9 +40,18 @@ public class WaitService {
                 .map(rank -> new AddToQueueInfo(rank + 1, uuid.toString()));
     }
 
-    public Mono<Void> deleteFromQueue() {
-        log.info("DELETING FROM QUEUE...");
-        return reactiveRedisTemplate.scan(ScanOptions.scanOptions().match("users:queue:processing:*").build())
+    @Scheduled(initialDelay = 5000, fixedDelay = 10000)
+    public void scheduleAllowUser() {
+        if (!scheduling) {
+            log.info("Scheduling is disabled...");
+            return;
+        }
+
+        log.info("Scheduling is called...");
+
+        reactiveRedisTemplate.scan(ScanOptions.scanOptions()
+                        .match(USER_QUEUE_PROCEED_KEY_FOR_SCAN)
+                        .build())
                 .count()
                 .doOnNext(size -> log.info("USER QUEUE IN PROGRESS SIZE : {}", size))
                 .flatMap(size -> {
@@ -51,7 +66,7 @@ public class WaitService {
                         return Mono.empty();
                     }
                 })
-                .then();
+                .subscribe();
     }
 
     public Mono<GetWaitingRankInfo> getWaitingRank(String uuid) {

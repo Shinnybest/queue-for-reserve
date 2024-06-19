@@ -4,7 +4,6 @@ import com.commerce.queue_for_reserve.model.dto.AddToQueueResponse;
 import com.commerce.queue_for_reserve.model.dto.GetWaitingRankResponse;
 import com.commerce.queue_for_reserve.service.WaitService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -22,13 +21,6 @@ public class WaitController {
                         .rank(addToQueueInfo.rank())
                         .uuid(addToQueueInfo.uuid())
                         .build());
-    }
-
-    @DeleteMapping
-    public Mono<ResponseEntity<Object>> deleteFromQueue() {
-        return waitService.deleteFromQueue()
-                .then(Mono.just(ResponseEntity.ok().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(500).build()));
     }
 
     @GetMapping("/rank")
