@@ -14,6 +14,8 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.UUID;
 
+import static com.commerce.queue_for_reserve.exception.ErrorCode.FAILED_TO_ADD_IN_WAIT_QUEUE;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,11 +38,13 @@ public class WaitService {
         return reactiveRedisTemplate.opsForZSet().add(USER_QUEUE_WAIT_KEY, String.valueOf(uuid), unixTimestamp)
                 .doOnNext(user -> log.info("UUID : {}, THREAD : {}", uuid, Thread.currentThread().getName()))
                 .filter(user -> user)
-                .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, uuid.toString()))
-                .map(rank -> {
-                    log.info("USER RANK IN THE WAITING QUEUE, RANK : {}, UUID : {}, THREAD : {}", rank + 1, uuid, Thread.currentThread().getName());
-                    return new AddToQueueInfo(rank + 1, uuid.toString());
-                });
+                .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, uuid.toString())
+                        .map(rank -> {
+                            log.info("USER RANK IN THE WAITING QUEUE, RANK : {}, UUID : {}, THREAD : {}", rank + 1, uuid, Thread.currentThread().getName());
+                            return new AddToQueueInfo(rank + 1, uuid.toString());
+                        })
+                )
+                .onErrorResume(e -> Mono.error(FAILED_TO_ADD_IN_WAIT_QUEUE.build()));
     }
 
     @Scheduled(initialDelay = 5000, fixedDelay = 10000)
