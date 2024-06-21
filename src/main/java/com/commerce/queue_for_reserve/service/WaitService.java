@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
@@ -31,13 +30,17 @@ public class WaitService {
 
 
     public Mono<AddToQueueInfo> addToQueue() {
-        var unixTimestamp = Instant.now().getEpochSecond();
+        var unixTimestamp = System.currentTimeMillis();
         var uuid = UUID.randomUUID();
         log.info("ADDING TO QUEUE... timestamp = {}, uuid = {}", unixTimestamp, uuid);
         return reactiveRedisTemplate.opsForZSet().add(USER_QUEUE_WAIT_KEY, String.valueOf(uuid), unixTimestamp)
+                .doOnNext(user -> log.info("UUID : {}, THREAD : {}", uuid, Thread.currentThread().getName()))
                 .filter(user -> user)
                 .flatMap(i -> reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_WAIT_KEY, uuid.toString()))
-                .map(rank -> new AddToQueueInfo(rank + 1, uuid.toString()));
+                .map(rank -> {
+                    log.info("USER RANK IN THE WAITING QUEUE, RANK : {}, UUID : {}, THREAD : {}", rank + 1, uuid, Thread.currentThread().getName());
+                    return new AddToQueueInfo(rank + 1, uuid.toString());
+                });
     }
 
     @Scheduled(initialDelay = 5000, fixedDelay = 10000)
