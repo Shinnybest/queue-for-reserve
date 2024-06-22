@@ -34,7 +34,7 @@ public class ProcessService {
                                 .delete(USER_QUEUE_PROCEED_KEY.formatted(uuid))
                                 .then(reactiveRedisTemplate.opsForSet()
                                         .add(USER_QUEUE_PROCEED_KEY.formatted(uuid), uuid)
-                                        .then(reactiveRedisTemplate.expire(USER_QUEUE_PROCEED_KEY.formatted(uuid), Duration.ofMinutes(10))))
+                                        .then(reactiveRedisTemplate.expire(USER_QUEUE_PROCEED_KEY.formatted(uuid), Duration.ofMinutes(TIME_EXTENSION_MINUTES))))
                                 .then();
                     } else {
                         throw USER_NOT_IN_PROGRESS.build();
