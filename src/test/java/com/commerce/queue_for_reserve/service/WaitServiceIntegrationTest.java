@@ -19,7 +19,7 @@ import java.util.UUID;
 @SpringBootTest
 @Import(EmbeddedRedis.class)
 @ActiveProfiles("test")
-class WaitServiceTest {
+class WaitServiceIntegrationTest {
 
     @Autowired
     private WaitService waitService;
