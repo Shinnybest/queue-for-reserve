@@ -15,8 +15,9 @@ public class RedisConfig {
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
         RedisSerializationContext<String, Object> serializationContext = RedisSerializationContext
                 .<String, Object>newSerializationContext(new GenericJackson2JsonRedisSerializer())
-                .key(stringRedisSerializer).value(serializer)
-                .hashKey(serializer)
+                .key(stringRedisSerializer)
+                .value(serializer)
+                .hashKey(stringRedisSerializer)
                 .hashValue(serializer).build();
         return new ReactiveRedisTemplate<>(connectionFactory, serializationContext).opsForHash();
     }
