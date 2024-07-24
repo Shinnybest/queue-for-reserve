@@ -1,10 +1,10 @@
 ## Project System Design
 ![project design-002(upload)](https://github.com/user-attachments/assets/4e325496-c330-4164-a7ff-cd68d1797212)
 
-- 쿠폰 발급 서버([링크]())
-- 사용자 대기열 관리 서버([링크]())
-- 게이트웨이 & 유레카 서버([링크]())
-- 인증/인가 서버([링크]())
+- 쿠폰 발급 서버([링크](https://github.com/commerce-prac/coupon-issue))
+- 사용자 대기열 관리 서버([링크](https://github.com/commerce-prac/queue-for-reserve))
+- 게이트웨이 & 유레카 서버([링크](https://github.com/commerce-prac/gateway-service_discovery))
+- 인증/인가 서버([링크](https://github.com/commerce-prac/auth))
 
 ## 사용 기술
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
